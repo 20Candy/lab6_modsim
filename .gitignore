@@ -1,5 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
+eje1_fotos_gif/
 *.py[cod]
 *$py.class
 
