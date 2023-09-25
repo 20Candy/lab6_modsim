@@ -1,6 +1,8 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 eje1_fotos_gif/
+imagenes_simulacion4/
+screens4/
 *.py[cod]
 *$py.class
 
