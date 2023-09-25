@@ -25,45 +25,88 @@ class Vehicle:
     def frenar_acelerar(self, d, max_speed, semaforo):
         #print('  - speed: ', self.speed)
         #print('  - d: ', d)
-        """print('  - pos: ', self.pos)
-        print('  - semaforo: ', semaforo.pos)
-        print('  - semaforo state: ', semaforo.state)
-        print('-'*50)"""
+        #print('  - pos: ', self.pos)
+        #print('  - semaforo: ', semaforo.pos)
+        #print('  - semaforo state: ', semaforo.state)
         
         #if self.pos in range(int(), semaforo.pos) and self.pos < semaforo.pos:    
         #print('  - semaforo: ',  self.pos, '(', semaforo.pos - (speeds[self.tipo] / 3.6 * 5)  ,semaforo.pos , ')' , semaforo.state)
         if self.pos >= semaforo.pos - (speeds[self.tipo] / 3.6) *5 and self.pos <= semaforo.pos:
+            #print('  - flag 1: ', self.pos, self.speed)
             if semaforo.state == 'red':
                 #print('  - frenar')
                 self.speed = 0
             else:
                 #print('  - acelerar')
-                self.speed = speeds[self.tipo] / 3.6 - 2*self.acceleration*5
+                if self.speed == 0: # si paró en el semaforo, acelera de golpe
+                    #self.speed = speeds[self.tipo] / 3.6 - 2*self.acceleration*5
+                    temp = speeds[self.tipo] / 3.6
+                    temp = temp**2
+                    #print('  - temp: ', temp)
+                    temp2 = 2*self.acceleration*5
+                    #print('  - temp2: ', temp2)
+                    self.speed = math.sqrt(temp - temp2)
+                else:
+                    if self.speed < max_speed:
+                        if d > 5: # si la distancia es mayor a 10 metros, acelera
+                            #print('  - flag 2: ', self.pos, self.speed)
+                            temp = self.speed**2 + 2*self.acceleration*d
+                            self.speed = math.sqrt(temp)
+                        #self.speed = math.sqrt(self.speed**2 + 2*self.acceleration*d) 
+                        elif d < 5 and d > 0:
+                            #print('  - flag 3: ', self.pos, self.speed)
+                            temp = self.speed**2 - 2*self.acceleration*d
+                            if temp >= 0:
+                                self.speed = math.sqrt(temp)
+                            else:
+                                self.speed = 0
+                        elif d <= 0:
+                            #print('  - flag 4: ', self.pos, self.speed)
+                            # Frenar de golpe
+                            self.speed = 0
+                    else:
+                        if d < 5 and d > 0:
+                            #print('  - flag 5: ', self.pos, self.speed)
+                            temp = self.speed**2 - 2*self.acceleration*d
+                            if temp >= 0:
+                                self.speed = math.sqrt(temp)
+                            else:
+                                self.speed = 0
+                        elif d <= 0:
+                            #print('  - flag 6: ', self.pos, self.speed)
+                            # Frenar de golpe
+                            self.speed = 0
         else:
             if self.speed < max_speed:
                 if d > 5: # si la distancia es mayor a 10 metros, acelera
+                    #print('  - flag 2: ', self.pos, self.speed)
                     temp = self.speed**2 + 2*self.acceleration*d
                     self.speed = math.sqrt(temp)
                 #self.speed = math.sqrt(self.speed**2 + 2*self.acceleration*d) 
                 elif d < 5 and d > 0:
+                    #print('  - flag 3: ', self.pos, self.speed)
                     temp = self.speed**2 - 2*self.acceleration*d
                     if temp >= 0:
                         self.speed = math.sqrt(temp)
                     else:
                         self.speed = 0
                 elif d <= 0:
+                    #print('  - flag 4: ', self.pos, self.speed)
                     # Frenar de golpe
                     self.speed = 0
             else:
                 if d < 5 and d > 0:
+                    #print('  - flag 5: ', self.pos, self.speed)
                     temp = self.speed**2 - 2*self.acceleration*d
                     if temp >= 0:
                         self.speed = math.sqrt(temp)
                     else:
                         self.speed = 0
                 elif d <= 0:
+                    #print('  - flag 6: ', self.pos, self.speed)
                     # Frenar de golpe
                     self.speed = 0
+        #print('-'*50)
 
 
 class Road:
@@ -103,6 +146,11 @@ def simulate_traffic(road, vehicles, semaforos, duration, dt):
 
     i = 0
     while i < duration_s and len(vehicles) > 0:
+        #for v in vehicles:
+        #    print(v.pos, '  -----  ', v.speed)
+        #print('-'*50)
+
+
         i += dt
         for s in semaforos:
             s.semaforo_update(dt)
@@ -117,6 +165,8 @@ def simulate_traffic(road, vehicles, semaforos, duration, dt):
             next_v_d = min(next_vehicle_distances) if next_vehicle_distances else road.length
             next_s_d = min(next_semaforo_distances) if next_semaforo_distances else road.length
             next_semaforo = semaforos[next_semaforo_distances.index(next_s_d)] 
+            #quemascerca = "vehiculo" if next_v_d < next_s_d else "semaforo"
+            #print('quemascerca: ', quemascerca)
             distance_to_next = min(next_v_d, next_s_d)
             v.frenar_acelerar(distance_to_next, road.speed_limit, next_semaforo)
             if (v.pos + v.speed * dt / 3.6) < road.length:
@@ -130,9 +180,7 @@ def simulate_traffic(road, vehicles, semaforos, duration, dt):
             flow_speeds.append((i, flow_speed))        
     
     
-        for v in vehicles:
-            print(v.pos, '  -----  ', v.speed)
-        print('-'*50)
+        
     
     return flow_speeds
 
@@ -147,7 +195,7 @@ def simulate_traffic(road, vehicles, semaforos, duration, dt):
 
 # Camino
 road_l = 20 * 1000 # 100 km
-speed_limit = 60 / 3.6 # km/h to m/s
+speed_limit = 40 / 3.6 # km/h to m/s
 road = Road(road_l, speed_limit, 2)
 
 # Semaforo
@@ -165,10 +213,15 @@ for s in range(0, road_l, 1000):
 sedan1 = Vehicle(45/3.6, 3.5, 0, -1, 'sedan')
 sedan2 = Vehicle(45/3.6, 3.5, 10, -1, 'sedan') 
 sedan3 = Vehicle(45/3.6, 3.5, 15, -1, 'sedan')
+sedan4 = Vehicle(45/3.6, 3.5, 20, -1, 'sedan')
+sedan5 = Vehicle(45/3.6, 3.5, 25, -1, 'sedan')
 van1 = Vehicle(37.5/3.6, 2.5, 5, -1, 'van')
 van2 = Vehicle(37.5/3.6, 2.5, 20, -1, 'van')
+van3 = Vehicle(37.5/3.6, 2.5, 25, -1, 'van')
 bike1 = Vehicle(55/3.6, 4, 20, -1, 'bike')
 bike2 = Vehicle(55/3.6, 4, 15, -1, 'bike')
+bike3 = Vehicle(55/3.6, 4, 10, -1, 'bike')
+bike4 = Vehicle(55/3.6, 4, 5, -1, 'bike')
 bus1 = Vehicle(40/3.6, 1.75, 40, -1, 'bus')
 bus2 = Vehicle(40/3.6, 1.75, 30, -1, 'bus')
 
@@ -200,4 +253,5 @@ dt = 5 # segundos
 flow_speeds = simulate_traffic(road, vehicles, semaforos, duration, dt)
 
 for f in flow_speeds:
-    print(f)
+    temp = f[1] * 3.6 # convertir m/s a km/h
+    print(f[0], ' - ', temp)
